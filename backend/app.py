@@ -6,6 +6,8 @@ from flask_mail import Mail
 from routes.auth_routes import auth
 from routes.course_routes import courses_bp
 from routes.student_profile_routes import student_profile
+from routes.admin_routes import admin
+from routes.notification_routes import notifications_bp
 
 load_dotenv()
 
@@ -38,6 +40,8 @@ app.mail = mail # Attach to app for access in blueprints
 app.register_blueprint(auth)
 app.register_blueprint(courses_bp)
 app.register_blueprint(student_profile)
+app.register_blueprint(admin)
+app.register_blueprint(notifications_bp)
 
 @app.route('/')
 def home():

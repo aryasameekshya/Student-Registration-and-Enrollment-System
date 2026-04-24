@@ -53,21 +53,24 @@ const StudentProfile = ({ user }) => {
 
     return (
         <div className="animate-fadeIn pb-5">
-            <div className="d-flex justify-content-between align-items-center mb-5">
+            <div className="d-flex justify-content-between align-items-center mb-5 pb-4 border-bottom">
                 <div className="d-flex align-items-center">
-                    <div className="profile-icon">
+                    <div className="profile-icon shadow-sm">
                         {profile.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="ms-4">
-                        <h3 className="mb-0 fw-bold text-dark">{profile.name}</h3>
-                        <div className="d-flex gap-3 mt-1">
-                            <span className="badge-role">{profile.role}</span>
-                            <span className="text-muted small"><i className="bi bi-envelope me-1"></i>{profile.email}</span>
+                        <h3 className="mb-1 fw-bold text-dark">{profile.name}</h3>
+                        <div className="d-flex flex-column gap-1 mt-1">
+                            <span className="badge-role text-uppercase fw-bold text-primary" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>{profile.role}</span>
+                            <span className="text-muted small d-flex align-items-center">
+                                <i className="bi bi-envelope-fill me-2" style={{ color: '#6366f1' }}></i>
+                                {profile.email}
+                            </span>
                         </div>
                     </div>
                 </div>
                 {!isEditing && (
-                    <button onClick={() => setIsEditing(true)} className="btn btn-primary px-4 shadow-sm">
+                    <button onClick={() => setIsEditing(true)} className="btn btn-outline-primary px-4 py-2 fw-bold shadow-sm rounded-pill transition-all">
                         <i className="bi bi-pencil-square me-2"></i>Edit Profile
                     </button>
                 )}

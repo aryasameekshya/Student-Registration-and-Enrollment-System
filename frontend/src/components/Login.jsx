@@ -67,9 +67,14 @@ const Login = () => {
                     </button>
                 </div>
 
-                <h2 className="text-center mb-4" style={{fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.025em'}}>
+                <div className="d-flex align-items-center justify-content-center mb-1">
+                    <h2 className="mb-0" style={{fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.025em'}}>
+                        OUTR
+                    </h2>
+                </div>
+                <p className="text-center text-muted mb-4 fw-bold">
                     {isAdmin ? 'Admin Portal' : 'Student Portal'}
-                </h2>
+                </p>
 
                 {error && <div className="alert alert-danger py-2">{error}</div>}
                 

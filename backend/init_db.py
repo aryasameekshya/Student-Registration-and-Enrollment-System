@@ -19,6 +19,7 @@ def init_db():
         cursor.execute("DROP TABLE IF EXISTS enrollments")
         cursor.execute("DROP TABLE IF EXISTS courses")
         cursor.execute("DROP TABLE IF EXISTS users")
+        cursor.execute("DROP TABLE IF EXISTS notifications")
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
         
         # Create users table
@@ -41,10 +42,13 @@ def init_db():
         create_courses_table = """
         CREATE TABLE courses (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
+            course_name VARCHAR(255) NOT NULL,
+            course_code VARCHAR(50) UNIQUE,
+            capacity INT DEFAULT 50,
             description TEXT,
             instructor VARCHAR(255),
             credits INT DEFAULT 3,
+            prerequisites VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
@@ -57,6 +61,7 @@ def init_db():
             id INT AUTO_INCREMENT PRIMARY KEY,
             student_id INT,
             course_id INT,
+            status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
             enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
@@ -86,7 +91,6 @@ def init_db():
             mother_occ VARCHAR(255),
             father_income VARCHAR(100),
             is_disabled BOOLEAN DEFAULT FALSE,
-            department VARCHAR(255),
             semester VARCHAR(50),
             jee_rank INT,
             tenth_percent DECIMAL(5,2),
@@ -111,6 +115,20 @@ def init_db():
         )
         """
         cursor.execute(create_docs_table)
+        
+        # Create notifications table
+        print("Creating notifications table...")
+        create_notifications_table = """
+        CREATE TABLE notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT,
+            message TEXT NOT NULL,
+            status ENUM('read', 'unread') DEFAULT 'unread',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+        """
+        cursor.execute(create_notifications_table)
 
         conn.commit()
         print("Successfully initialized all database tables!")

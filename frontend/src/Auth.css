@@ -158,11 +158,15 @@ body {
   border-radius: 12px !important;
   padding: 0.875rem 1.5rem !important;
   font-weight: 700 !important;
-  margin-top: 1.5rem !important;
-  width: 100% !important;
   color: white !important;
   transition: all 0.3s ease !important;
   cursor: pointer;
+}
+
+.auth-card .btn-primary, 
+.auth-form .btn-primary {
+  width: 100% !important;
+  margin-top: 1.5rem !important;
 }
 
 .btn-primary:hover {
@@ -332,16 +336,39 @@ body {
   margin: 0;
 }
 
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.25rem;
+}
+
 .user-avatar-circle {
-  width: 40px;
-  height: 40px;
-  background: #e2e8f0;
+  width: 42px;
+  height: 42px;
+  background: #f1f5f9;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #475569;
+  color: #1e3a8a;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-avatar-circle:hover {
+  background: #eef2ff;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.user-avatar-circle.active-avatar {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
 }
 
 .content-area {
@@ -392,11 +419,41 @@ body {
   justify-content: center;
 }
 
-.monitor-illustration {
-  font-size: 8rem;
-  color: #e2e8f0;
+.student-illustration {
   position: relative;
   animation: float 3s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.student-illustration .main-icon {
+  font-size: 8rem;
+  color: #c7d2fe;
+  filter: drop-shadow(0 10px 15px rgba(99, 102, 241, 0.2));
+}
+
+.student-illustration .sparkle-icon-1 {
+  position: absolute;
+  top: -10px;
+  right: -5px;
+  font-size: 2.5rem;
+  color: #fcd34d;
+  animation: pulse 2s infinite;
+}
+
+.student-illustration .badge-icon {
+  position: absolute;
+  bottom: 0px;
+  right: -10px;
+  font-size: 3.5rem;
+  color: #818cf8;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
 }
 
 .registration-alert {
@@ -415,6 +472,60 @@ body {
   border-radius: 12px;
   padding: 1.25rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar nav-item button */
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+  color: var(--primary-color);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+}
+
+.nav-item.active i {
+  color: var(--primary-color);
+}
+
+/* Portal card — used for elevated content sections (admin panels, etc.) */
+.portal-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.portal-card .card-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
 
 @media (max-width: 992px) {
@@ -502,4 +613,31 @@ input[type="file"]::file-selector-button:hover {
   .auth-card {
     padding: 2rem 1.5rem;
   }
+}
+
+/* Modal & Backdrop Refinement */
+.modal-content {
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  opacity: 1 !important;
+}
+
+.modal-backdrop.show {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  opacity: 1 !important;
+}
+
+.modal-body {
+  padding: 2rem !important;
+}
+
+.modal-header {
+  padding: 1.5rem 2rem 0.5rem !important;
+}
+
+.modal-footer {
+  padding: 1rem 2rem 2rem !important;
 }

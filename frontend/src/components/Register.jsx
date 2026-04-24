@@ -25,7 +25,6 @@ const Register = () => {
         father_occ: '',
         mother_occ: '',
         father_income: '',
-        department: 'Computer Science',
         semester: '1st',
         jee_rank: '',
         tenth_percent: '',
@@ -510,6 +509,15 @@ const Register = () => {
     return (
         <div className="auth-container">
             <div className="auth-card" style={{ maxWidth: step > 2 ? '700px' : '420px', transition: 'all 0.3s ease' }}>
+                <div className="d-flex align-items-center justify-content-center mb-1 mt-2">
+                    <h2 className="mb-0" style={{fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.025em'}}>
+                        OUTR
+                    </h2>
+                </div>
+                <p className="text-center text-muted mb-4 fw-bold">
+                    Registration Portal
+                </p>
+
                 {step === 1 && (
                     <div className="auth-tabs">
                         <button 

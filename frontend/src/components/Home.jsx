@@ -5,7 +5,10 @@ import '../Auth.css';
 import CourseList from './CourseList';
 import AdminPanel from './AdminPanel';
 import StudentProfile from './StudentProfile';
-import outrLogo from '../assets/outr_logo.png';
+import AdminDashboardStats from './AdminDashboardStats';
+import NotificationPanel from './NotificationPanel';
+import AdminProfile from './AdminProfile';
+
 
 const Home = () => {
     const [user, setUser] = useState(null);
@@ -21,9 +24,27 @@ const Home = () => {
         if (!storedUser) {
             navigate('/login');
         } else {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            
+            // Sync user data on mount to ensure full name is updated
+            if (parsedUser.role === 'student') {
+                axios.get('http://localhost:5000/register/status', { withCredentials: true })
+                    .then(res => {
+                        if (res.data && res.data.user_data) {
+                            const updatedUser = { 
+                                ...parsedUser, 
+                                name: res.data.user_data.name || parsedUser.name,
+                                registration_step: res.data.user_data.registration_step || parsedUser.registration_step
+                            };
+                            setUser(updatedUser);
+                            localStorage.setItem('user', JSON.stringify(updatedUser));
+                        }
+                    })
+                    .catch(err => console.error("Could not sync profile data", err));
+            }
         }
-    }, [navigate]);
+    }, [navigate, activeTab]); // Added activeTab to effect dependencies to ensure UI syncs when switching back
 
     const handleLogout = async () => {
         try {
@@ -39,6 +60,14 @@ const Home = () => {
         setRefreshKey(prev => prev + 1);
     };
 
+    const handleAvatarClick = () => {
+        if (user.role === 'admin') {
+            setActiveTab('admin-profile');
+        } else {
+            setActiveTab('profile');
+        }
+    };
+
     if (!user) return null;
 
     return (
@@ -46,29 +75,66 @@ const Home = () => {
             {/* Sidebar Navigation */}
             <aside className="sidebar">
                 <div className="sidebar-header">
-                    <img src={outrLogo} alt="OUTR Logo" className="outr-logo-sidebar" />
                     <div className="sidebar-branding">
                         <div className="sidebar-title">OUTR</div>
                     </div>
                 </div>
-                
+
                 <div className="nav-menu">
-                    <button 
+                    <button
                         className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
                         onClick={() => setActiveTab('dashboard')}
                     >
                         <i className="bi bi-grid-1x2-fill me-3"></i> <span>Dashboard</span>
                     </button>
 
-                    <button 
-                        className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('profile')}
-                    >
-                        <i className="bi bi-person-badge-fill me-3"></i> <span>Student Profile</span>
-                    </button>
+                    {user.role !== 'admin' && (
+                        <button
+                            className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('profile')}
+                        >
+                            <i className="bi bi-person-badge-fill me-3"></i> <span>Student Profile</span>
+                        </button>
+                    )}
+
+                    {user.role === 'admin' ? (
+                        <>
+                            <button
+                                className={`nav-item ${activeTab === 'admin-students' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('admin-students')}
+                            >
+                                <i className="bi bi-people-fill me-3"></i> <span>Manage Students</span>
+                            </button>
+                            <button
+                                className={`nav-item ${activeTab === 'admin-courses' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('admin-courses')}
+                            >
+                                <i className="bi bi-journal-bookmark-fill me-3"></i> <span>Manage Courses</span>
+                            </button>
+                            <button
+                                className={`nav-item ${activeTab === 'admin-enrollments' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('admin-enrollments')}
+                            >
+                                <i className="bi bi-file-earmark-check-fill me-3"></i> <span>Enrollment Requests</span>
+                            </button>
+                            <button
+                                className={`nav-item ${activeTab === 'admin-reports' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('admin-reports')}
+                            >
+                                <i className="bi bi-bar-chart-line-fill me-3"></i> <span>System Reports</span>
+                            </button>
+                        </>
+                    ) : (
+                        <button 
+                            className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('courses')}
+                        >
+                            <i className="bi bi-book-half me-3"></i> <span>Select Courses</span>
+                        </button>
+                    )}
 
                     {canContinueRegistration && (
-                        <button 
+                        <button
                             className="nav-item registration-alert"
                             onClick={() => navigate('/register')}
                         >
@@ -88,8 +154,13 @@ const Home = () => {
             <main className="main-content-wrapper">
                 <header className="main-top-header">
                     <h2 className="university-title">Odisha University of Technology and Research</h2>
-                    <div className="user-profile-header">
-                        <div className="user-avatar-circle">
+                    <div className="user-profile-header gap-3">
+                        <NotificationPanel />
+                        <div 
+                            className={`user-avatar-circle ${activeTab === (user.role === 'admin' ? 'admin-profile' : 'profile') ? 'active-avatar' : ''}`} 
+                            onClick={handleAvatarClick}
+                            title="My Profile"
+                        >
                             {user.name.charAt(0)}
                         </div>
                     </div>
@@ -98,57 +169,70 @@ const Home = () => {
                 <div className="content-area animate-fadeIn">
                     {activeTab === 'dashboard' ? (
                         <div className="dashboard-view">
-                            <div className="welcome-banner-card">
-                                <div className="banner-content">
-                                    <h3 className="welcome-text">Welcome <span>{user.name}</span> 🎉</h3>
-                                    <div className="reg-no-badge">
-                                        REG. NO: {user.jee_app_no || 'N/A'}
-                                    </div>
-                                    <div className="portal-description mt-3">
-                                        <strong>OUTR Portal</strong><br/>
-                                        This is your Dashboard. Use the menu bar to proceed.
-                                    </div>
+                                     {canContinueRegistration && (
+                                         <div className="incomplete-reg-card mt-3">
+                                             <div className="d-flex align-items-center">
+                                                 <i className="bi bi-exclamation-circle-fill text-warning fs-4 me-3"></i>
+                                                 <div>
+                                                     <div className="fw-bold text-dark">Registration Incomplete</div>
+                                                     <div className="small text-muted">You have pending steps to complete your profile.</div>
+                                                 </div>
+                                                 <button
+                                                     className="btn btn-primary btn-sm ms-auto"
+                                                     onClick={() => navigate('/register')}
+                                                 >
+                                                     Finish Now
+                                                 </button>
+                                             </div>
+                                         </div>
+                                     )}
 
-                                    {canContinueRegistration && (
-                                        <div className="incomplete-reg-card mt-3">
-                                            <div className="d-flex align-items-center">
-                                                <i className="bi bi-exclamation-circle-fill text-warning fs-4 me-3"></i>
-                                                <div>
-                                                    <div className="fw-bold text-dark">Registration Incomplete</div>
-                                                    <div className="small text-muted">You have pending steps to complete your profile.</div>
-                                                </div>
-                                                <button 
-                                                    className="btn btn-primary btn-sm ms-auto"
-                                                    onClick={() => navigate('/register')}
-                                                >
-                                                    Finish Now
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="banner-illustration">
-                                    <div className="monitor-illustration">
-                                        <i className="bi bi-display"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Course List as part of dashboard or separate tab */}
-                            <div className="portal-card mt-4">
-                                <div className="card-header-flex">
-                                    <h5 className="fw-bold mb-0">Course Catalog</h5>
-                                </div>
-                                <hr className="my-3"/>
-                                <CourseList key={refreshKey} user={user} />
-                            </div>
+                                     {/* Notification Alert for Students */}
+                                     {user.role === 'student' && !canContinueRegistration && (
+                                         <div className="alert alert-info mt-3 border-0 shadow-sm" style={{borderRadius: '12px', background: 'rgba(59, 130, 246, 0.05)'}}>
+                                             <div className="d-flex align-items-center">
+                                                 <i className="bi bi-info-circle-fill text-primary fs-5 me-3"></i>
+                                                 <div className="small">
+                                                     Check your <span className="fw-bold">notifications</span> for updates on your enrollment requests.
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     )}
+
+                            {user.role === 'admin' && (
+                                <AdminDashboardStats />
+                            )}
                         </div>
                     ) : activeTab === 'profile' ? (
-                        <div className="portal-card">
+                        <div className="animate-fadeIn">
                              <StudentProfile user={user} />
                         </div>
-                    ) : (
+                    ) : activeTab === 'admin-profile' ? (
+                        <div className="animate-fadeIn">
+                             <AdminProfile />
+                        </div>
+                    ) : activeTab === 'admin-students' ? (
                         <div className="portal-card">
+                             <AdminPanel activeTab="students" />
+                        </div>
+                    ) : activeTab === 'admin-courses' ? (
+                        <div className="portal-card">
+                             <AdminPanel activeTab="courses" onCourseAdded={handleCourseAdded} />
+                        </div>
+                    ) : activeTab === 'admin-enrollments' ? (
+                        <div className="portal-card">
+                             <AdminPanel activeTab="enrollments" />
+                        </div>
+                    ) : activeTab === 'admin-reports' ? (
+                        <div className="portal-card">
+                             <AdminPanel activeTab="reports" />
+                        </div>
+                    ) : activeTab === 'courses' ? (
+                        <div className="animate-fadeIn">
+                            <CourseList key={refreshKey} user={user} />
+                        </div>
+                    ) : (
+                        <div className="animate-fadeIn">
                             <CourseList key={refreshKey} user={user} />
                         </div>
                     )}

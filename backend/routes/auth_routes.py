@@ -116,7 +116,7 @@ def register_details():
     # Fields to extract
     fields = [
         'jee_app_no', 'dob', 'gender', 'nationality', 'blood_group', 
-        'caste', 'aadhaar_no', 'phone', 'address', 'department', 'semester',
+        'caste', 'aadhaar_no', 'phone', 'address', 'semester',
         'father_name', 'mother_name', 'father_occ', 'mother_occ', 'father_income',
         'is_disabled', 'jee_rank', 'tenth_percent', 'twelfth_percent', 
         'tenth_pass_year', 'twelfth_pass_year'
@@ -139,11 +139,11 @@ def register_details():
         query = """
         INSERT INTO students (
             user_id, jee_app_no, dob, gender, nationality, blood_group, 
-            caste, aadhaar_no, phone, address, department, semester,
+            caste, aadhaar_no, phone, address, semester,
             father_name, mother_name, father_occ, mother_occ, father_income,
             is_disabled, jee_rank, tenth_percent, twelfth_percent, 
             tenth_pass_year, twelfth_pass_year
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             jee_app_no = VALUES(jee_app_no),
             dob = VALUES(dob),
@@ -154,7 +154,6 @@ def register_details():
             aadhaar_no = VALUES(aadhaar_no),
             phone = VALUES(phone),
             address = VALUES(address),
-            department = VALUES(department),
             semester = VALUES(semester),
             father_name = VALUES(father_name),
             mother_name = VALUES(mother_name),
@@ -170,7 +169,7 @@ def register_details():
         """
         cursor.execute(query, (
             user_id, values['jee_app_no'], values['dob'], values['gender'], values['nationality'], values['blood_group'],
-            values['caste'], values['aadhaar_no'], values['phone'], values['address'], values['department'], values['semester'],
+            values['caste'], values['aadhaar_no'], values['phone'], values['address'], values['semester'],
             values['father_name'], values['mother_name'], values['father_occ'], values['mother_occ'], values['father_income'],
             values['is_disabled'], values['jee_rank'], values['tenth_percent'], values['twelfth_percent'],
             values['tenth_pass_year'], values['twelfth_pass_year']
@@ -179,9 +178,9 @@ def register_details():
         # Determine next step
         next_step = int(current_step) + 1 if current_step else None
         
-        # Update registration step if provided
+        # Update registration step and name if provided
         if next_step:
-            cursor.execute("UPDATE users SET registration_step = %s WHERE id = %s", (next_step, user_id))
+            cursor.execute("UPDATE users SET registration_step = %s, name = %s WHERE id = %s", (next_step, values.get('name') or data.get('name'), user_id))
             
         conn.commit()
         return jsonify({"message": "Details saved successfully", "registration_step": next_step}), 200
