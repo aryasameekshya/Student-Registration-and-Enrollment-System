@@ -92,6 +92,7 @@ def init_db():
             father_income VARCHAR(100),
             is_disabled BOOLEAN DEFAULT FALSE,
             semester VARCHAR(50),
+            course VARCHAR(100),
             jee_rank INT,
             tenth_percent DECIMAL(5,2),
             twelfth_percent DECIMAL(5,2),

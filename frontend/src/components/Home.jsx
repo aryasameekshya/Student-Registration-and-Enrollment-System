@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../Auth.css';
 import CourseList from './CourseList';
+import AboutCourses from './AboutCourses';
+import Transactions from './Transactions';
 import AdminPanel from './AdminPanel';
 import StudentProfile from './StudentProfile';
 import AdminDashboardStats from './AdminDashboardStats';
 import NotificationPanel from './NotificationPanel';
 import AdminProfile from './AdminProfile';
+import SemesterRegistration from './SemesterRegistration';
+import MiscTransactions from './MiscTransactions';
+import Attendance from './Attendance';
 
 
 const Home = () => {
@@ -76,6 +81,11 @@ const Home = () => {
             <aside className="sidebar">
                 <div className="sidebar-header">
                     <div className="sidebar-branding">
+                        <img 
+                            src="/logo_4.png" 
+                            alt="OUTR Logo" 
+                            className="outr-logo-sidebar" 
+                        />
                         <div className="sidebar-title">OUTR</div>
                     </div>
                 </div>
@@ -125,12 +135,32 @@ const Home = () => {
                             </button>
                         </>
                     ) : (
-                        <button 
-                            className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('courses')}
-                        >
-                            <i className="bi bi-book-half me-3"></i> <span>Select Courses</span>
-                        </button>
+                        <>
+                            <button 
+                                className={`nav-item ${activeTab === 'transactions' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('transactions')}
+                            >
+                                <i className="bi bi-credit-card-fill me-3"></i> <span>Transactions</span>
+                            </button>
+                            <button 
+                                className={`nav-item ${activeTab === 'misc-txns' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('misc-txns')}
+                            >
+                                <i className="bi bi-receipt-cutoff me-3"></i> <span>Misc Transactions</span>
+                            </button>
+                             <button 
+                                className={`nav-item ${activeTab === 'sem-reg' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('sem-reg')}
+                            >
+                                <i className="bi bi-calendar-check-fill me-3"></i> <span>Semester Registration</span>
+                            </button>
+                            <button 
+                                className={`nav-item ${activeTab === 'attendance' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('attendance')}
+                            >
+                                <i className="bi bi-clock-history me-3"></i> <span>Attendance</span>
+                            </button>
+                        </>
                     )}
 
                     {canContinueRegistration && (
@@ -169,35 +199,67 @@ const Home = () => {
                 <div className="content-area animate-fadeIn">
                     {activeTab === 'dashboard' ? (
                         <div className="dashboard-view">
-                                     {canContinueRegistration && (
-                                         <div className="incomplete-reg-card mt-3">
-                                             <div className="d-flex align-items-center">
-                                                 <i className="bi bi-exclamation-circle-fill text-warning fs-4 me-3"></i>
-                                                 <div>
-                                                     <div className="fw-bold text-dark">Registration Incomplete</div>
-                                                     <div className="small text-muted">You have pending steps to complete your profile.</div>
-                                                 </div>
-                                                 <button
-                                                     className="btn btn-primary btn-sm ms-auto"
-                                                     onClick={() => navigate('/register')}
-                                                 >
-                                                     Finish Now
-                                                 </button>
-                                             </div>
-                                         </div>
-                                     )}
+                            {user.role === 'student' && (
+                                <div className="welcome-banner-card mb-4 animate-fadeIn">
+                                    <div className="welcome-content">
+                                        <div className="reg-no-badge mb-3">REGN NO: {user.jee_app_no || 'N/A'}</div>
+                                        <h1 className="welcome-text">
+                                            Welcome back, <span>{user.name}</span>!
+                                        </h1>
+                                        <p className="text-muted lead mb-0">
+                                            Your academic portal is ready. Access your courses, 
+                                            track your attendance, and manage your fees effortlessly.
+                                        </p>
+                                    </div>
+                                    <div className="banner-illustration">
+                                        <img 
+                                            src="/logo_4.png" 
+                                            alt="OUTR Logo" 
+                                            className="outr-dashboard-logo"
+                                            style={{ width: '180px', height: '180px', objectFit: 'contain' }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
-                                     {/* Notification Alert for Students */}
-                                     {user.role === 'student' && !canContinueRegistration && (
-                                         <div className="alert alert-info mt-3 border-0 shadow-sm" style={{borderRadius: '12px', background: 'rgba(59, 130, 246, 0.05)'}}>
-                                             <div className="d-flex align-items-center">
-                                                 <i className="bi bi-info-circle-fill text-primary fs-5 me-3"></i>
-                                                 <div className="small">
-                                                     Check your <span className="fw-bold">notifications</span> for updates on your enrollment requests.
-                                                 </div>
-                                             </div>
+                             {canContinueRegistration && (
+                                 <div className="incomplete-reg-card mt-3">
+                                     <div className="d-flex align-items-center">
+                                         <i className="bi bi-exclamation-circle-fill text-warning fs-4 me-3"></i>
+                                         <div>
+                                             <div className="fw-bold text-dark">Registration Incomplete</div>
+                                             <div className="small text-muted">You have pending steps to complete your profile.</div>
                                          </div>
-                                     )}
+                                         <button
+                                             className="btn btn-primary btn-sm ms-auto"
+                                             onClick={() => navigate('/register')}
+                                         >
+                                             Finish Now
+                                         </button>
+                                     </div>
+                                 </div>
+                             )}
+
+                             {/* Notification Alert for Students */}
+                             {user.role === 'student' && !canContinueRegistration && (
+                                 <div className="alert alert-info mt-3 border-0 shadow-sm" style={{borderRadius: '12px', background: 'rgba(59, 130, 246, 0.05)'}}>
+                                     <div className="d-flex align-items-center">
+                                         <i className="bi bi-info-circle-fill text-primary fs-5 me-3"></i>
+                                         <div className="small">
+                                             Check your <span className="fw-bold">notifications</span> for updates on your enrollment requests.
+                                         </div>
+                                     </div>
+                                 </div>
+                             )}
+
+                            {user.role === 'student' && (
+                                <div className="text-start mt-5 animate-fadeIn" style={{ paddingLeft: '2.5rem' }}>
+                                    <h2 className="text-primary fw-bold mb-0" style={{ fontSize: '2.2rem', opacity: '0.9', letterSpacing: '2px' }}>
+                                        कर्मणैव हि संसिद्धिः
+                                    </h2>
+                                    <div className="text-muted small mt-2">Odisha University of Technology and Research</div>
+                                </div>
+                            )}
 
                             {user.role === 'admin' && (
                                 <AdminDashboardStats />
@@ -227,13 +289,25 @@ const Home = () => {
                         <div className="portal-card">
                              <AdminPanel activeTab="reports" />
                         </div>
-                    ) : activeTab === 'courses' ? (
+                    ) : activeTab === 'transactions' ? (
                         <div className="animate-fadeIn">
-                            <CourseList key={refreshKey} user={user} />
+                            <Transactions user={user} />
+                        </div>
+                    ) : activeTab === 'sem-reg' ? (
+                        <div className="animate-fadeIn">
+                            <SemesterRegistration user={user} />
+                        </div>
+                    ) : activeTab === 'misc-txns' ? (
+                        <div className="animate-fadeIn">
+                            <MiscTransactions />
+                        </div>
+                    ) : activeTab === 'attendance' ? (
+                        <div className="animate-fadeIn">
+                            <Attendance user={user} />
                         </div>
                     ) : (
                         <div className="animate-fadeIn">
-                            <CourseList key={refreshKey} user={user} />
+                            <Transactions user={user} />
                         </div>
                     )}
                 </div>

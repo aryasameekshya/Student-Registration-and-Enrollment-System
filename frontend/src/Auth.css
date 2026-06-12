@@ -641,3 +641,16 @@ input[type="file"]::file-selector-button:hover {
 .modal-footer {
   padding: 1rem 2rem 2rem !important;
 }
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}

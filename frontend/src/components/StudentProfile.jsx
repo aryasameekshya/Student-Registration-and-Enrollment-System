@@ -7,16 +7,53 @@ const StudentProfile = ({ user }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ text: '', type: '' });
+    const [receiptFile, setReceiptFile] = useState(null);
+
+    const [allFeesPaid, setAllFeesPaid] = useState(false);
 
     useEffect(() => {
         fetchProfile();
     }, []);
+
+    const checkTransactionStatus = (fetchedProfile) => {
+        if (!fetchedProfile) return;
+        const storageKey = `transaction_history_v5_${fetchedProfile.id}`;
+        const storedTxns = localStorage.getItem(storageKey);
+        
+        let txns = [];
+        if (storedTxns) {
+            txns = JSON.parse(storedTxns);
+        } else {
+            // Force re-check or skip if no storage yet
+            return;
+        }
+
+        const admissionPaid = txns.some(t => t.ref_no.startsWith('ADM') && t.status === 'Success');
+        const regnPaid = txns.some(t => String(t.sem) === '1' && t.ref_no.startsWith('REG') && t.status === 'Success');
+        const semPaid = txns.some(t => String(t.sem) === '1' && t.ref_no.startsWith('SEM') && t.status === 'Success');
+        
+        console.log(`[DEBUG] Profile Check - Admission: ${admissionPaid}, Regn: ${regnPaid}, Sem: ${semPaid}`);
+
+        const allInitialPaid = admissionPaid && regnPaid && semPaid;
+        setAllFeesPaid(allInitialPaid);
+
+        // Sync with backend if mismatch detected
+        if (allInitialPaid && fetchedProfile.fee_status !== 'Paid') {
+            console.log("[DEBUG] Syncing 'Paid' status from Profile...");
+            axios.post('http://localhost:5000/student/update-fee-status', { 
+                fee_status: 'Paid' 
+            }, { withCredentials: true })
+            .then(() => console.log("[DEBUG] Backend fee status synced to Paid"))
+            .catch(err => console.error("[DEBUG] Failed to sync fee status", err));
+        }
+    };
 
     const fetchProfile = async () => {
         try {
             const res = await axios.get('http://localhost:5000/student/profile', { withCredentials: true });
             setProfile(res.data);
             setLoading(false);
+            checkTransactionStatus(res.data);
         } catch (err) {
             console.error('Error fetching profile', err);
             setLoading(false);
@@ -24,25 +61,51 @@ const StudentProfile = ({ user }) => {
     };
 
     const handleChange = (e) => {
-        setProfile({ ...profile, [e.target.name]: e.target.value });
+        if (e.target.type === 'file') {
+            setReceiptFile(e.target.files[0]);
+        } else {
+            setProfile({ ...profile, [e.target.name]: e.target.value });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Update textual profile data
             await axios.post('http://localhost:5000/student/update', profile, { withCredentials: true });
             
+            // Upload Fee Receipt if selected
+            if (receiptFile) {
+                const formData = new FormData();
+                formData.append('file', receiptFile);
+                formData.append('user_id', user.id);
+                formData.append('doc_type', 'fee_receipt');
+                
+                await axios.post('http://localhost:5000/register/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    withCredentials: true
+                });
+                
+                // Update fee_status to 'Pending Verification'
+                await axios.post('http://localhost:5000/student/update', { 
+                    ...profile, 
+                    fee_status: 'Pending Verification' 
+                }, { withCredentials: true });
+            }
+
             const currentUser = JSON.parse(localStorage.getItem('user'));
             if (currentUser) {
                 currentUser.name = profile.name;
                 localStorage.setItem('user', JSON.stringify(currentUser));
             }
 
-            setMessage({ text: 'Profile updated successfully!', type: 'success' });
+            setMessage({ text: 'Profile and documents updated successfully!', type: 'success' });
             setIsEditing(false);
+            setReceiptFile(null);
+            fetchProfile(); // Refresh to show new documents
             setTimeout(() => setMessage({ text: '', type: '' }), 3000);
         } catch (err) {
-            setMessage({ text: 'Failed to update profile.', type: 'danger' });
+            setMessage({ text: 'Failed to update profile or upload receipt.', type: 'danger' });
         }
     };
 
@@ -66,6 +129,9 @@ const StudentProfile = ({ user }) => {
                                 <i className="bi bi-envelope-fill me-2" style={{ color: '#6366f1' }}></i>
                                 {profile.email}
                             </span>
+                            <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
+                                <span className="badge bg-primary px-2 py-1 rounded-pill" style={{fontSize: '0.7rem'}}>JEE APPLICATION NO: {profile.jee_app_no || 'N/A'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -87,9 +153,9 @@ const StudentProfile = ({ user }) => {
                 <div className="profile-section-header">Identification & Personal Details</div>
                 <div className="row g-4 mb-5">
                     <div className="col-md-4">
-                        <label className="profile-label">JEE Application No</label>
-                        <p className="profile-value">{profile.jee_app_no}</p>
-                        <small className="text-muted">Non-editable</small>
+                        <div className="d-flex align-items-center flex-wrap gap-2">
+                            <span className="badge bg-primary px-3 py-2 rounded-pill">JEE APPLICATION NO: {profile.jee_app_no || 'N/A'}</span>
+                        </div>
                     </div>
                     <div className="col-md-4">
                         <label className="profile-label">Aadhaar Number</label>
@@ -141,6 +207,23 @@ const StudentProfile = ({ user }) => {
                             </select>
                         ) : (
                             <p className="profile-value">{profile.caste || 'General'}</p>
+                        )}
+                    </div>
+                    <div className="col-md-4">
+                        <label className="profile-label">Course / Branch</label>
+                        {isEditing ? (
+                            <select name="course" className="form-control" value={profile.course} onChange={handleChange}>
+                                <option value="cse">CSE</option>
+                                <option value="it">IT</option>
+                                <option value="aiml">AIML</option>
+                                <option value="electrical">Electrical</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="mechanical">Mechanical</option>
+                                <option value="civil">Civil</option>
+                                <option value="biotech">Biotech</option>
+                            </select>
+                        ) : (
+                            <p className="profile-value text-uppercase">{profile.course || 'N/A'}</p>
                         )}
                     </div>
                     <div className="col-md-4">
@@ -269,13 +352,13 @@ const StudentProfile = ({ user }) => {
 
                 {/* Section: Document Vault */}
                 <div className="profile-section-header">Document Vault</div>
-                <div className="row g-3 mb-5">
+                <div className="row g-3 mb-4">
                     {profile.documents && profile.documents.length > 0 ? (
                         profile.documents.map((doc, idx) => (
                             <div key={idx} className="col-md-6 col-lg-4">
                                 <div className="doc-item">
                                     <div className="doc-icon">
-                                        <i className={`bi ${doc.type.includes('cert') || doc.type.includes('card') ? 'bi-shield-check' : 'bi-file-earmark-pdf-fill'}`}></i>
+                                        <i className={`bi ${doc.type === 'fee_receipt' ? 'bi-receipt-cutoff text-success' : (doc.type.includes('cert') || doc.type.includes('card') ? 'bi-shield-check' : 'bi-file-earmark-pdf-fill')}`}></i>
                                     </div>
                                     <div className="doc-name">{formatLabel(doc.type)}</div>
                                     <a href={`http://localhost:5000${doc.url}`} target="_blank" rel="noopener noreferrer" className="view-link">
@@ -290,6 +373,105 @@ const StudentProfile = ({ user }) => {
                         </div>
                     )}
                 </div>
+                
+                {/* Section: Enrollment Status */}
+                <div className="profile-section-header">Enrollment Status</div>
+                <div className="mb-5">
+                    <div className={`alert d-flex align-items-center p-4 rounded-4 shadow-sm border-0 ${
+                        profile.enrollment_status === 'Approved' ? 'alert-success' : 
+                        profile.enrollment_status === 'Rejected' ? 'alert-danger' : 
+                        'alert-info'
+                    }`} style={{ 
+                        background: profile.enrollment_status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : 
+                                    profile.enrollment_status === 'Rejected' ? 'rgba(239, 68, 68, 0.1)' : 
+                                    'rgba(59, 130, 246, 0.1)' 
+                    }}>
+                        <i className={`bi fs-3 me-3 ${
+                            profile.enrollment_status === 'Approved' ? 'bi-check-circle-fill text-success' : 
+                            profile.enrollment_status === 'Rejected' ? 'bi-x-circle-fill text-danger' : 
+                            'bi-info-circle-fill text-primary'
+                        }`}></i>
+                        <div>
+                            <h6 className={`mb-1 fw-bold ${
+                                profile.enrollment_status === 'Approved' ? 'text-success' : 
+                                profile.enrollment_status === 'Rejected' ? 'text-danger' : 
+                                'text-primary'
+                            }`}>
+                                STATUS: {profile.enrollment_status}
+                            </h6>
+                            <p className="mb-0 small text-dark opacity-75">
+                                {profile.enrollment_status === 'Approved' ? 
+                                    'Congratulations! Your enrollment has been approved for the selected branch.' : 
+                                 profile.enrollment_status === 'Rejected' ? 
+                                    'Your enrollment request has been rejected. Please contact the administration for details.' : 
+                                    'Your enrollment request is currently under review by the administration.'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {(profile.sgpa || profile.cgpa) && (
+                    <div className="animate-fadeIn">
+                        <div className="profile-section-header">Academic Performance</div>
+                        <div className="row g-4 mb-5">
+                            <div className="col-md-6">
+                                <div className="p-4 rounded-4 shadow-sm border bg-white h-100">
+                                    <div className="d-flex align-items-center mb-3">
+                                        <div className="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
+                                            <i className="bi bi-graph-up-arrow fs-4 text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <h6 className="profile-label mb-0">Latest Semester SGPA</h6>
+                                            <p className="mb-0 x-small text-muted text-uppercase tracking-wider">Used for portal eligibility</p>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex align-items-baseline">
+                                        <span className="fs-2 fw-bold text-primary">{profile.sgpa}</span>
+                                        <span className="text-muted ms-2">/ 10.0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="p-4 rounded-4 shadow-sm border bg-white h-100">
+                                    <div className="d-flex align-items-center mb-3">
+                                        <div className="bg-success bg-opacity-10 p-3 rounded-3 me-3">
+                                            <i className="bi bi-mortarboard fs-4 text-success"></i>
+                                        </div>
+                                        <div>
+                                            <h6 className="profile-label mb-0">Cumulative CGPA</h6>
+                                            <p className="mb-0 x-small text-muted text-uppercase tracking-wider">Overall Academic Record</p>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex align-items-baseline">
+                                        <span className="fs-2 fw-bold text-success">{profile.cgpa}</span>
+                                        <span className="text-muted ms-2">/ 10.0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Upload Fee Receipt Field */}
+                {isEditing && (
+                    <div className="mb-5 p-4 rounded-4 border bg-white shadow-sm animate-fadeIn">
+                        <h6 className="fw-bold mb-3 d-flex align-items-center">
+                            <i className="bi bi-cloud-arrow-up-fill me-2 text-primary"></i>
+                            Upload New Fee Receipt
+                        </h6>
+                        <div className="input-group">
+                            <input 
+                                type="file" 
+                                className="form-control" 
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <small className="text-muted mt-2 d-block">
+                            Accepted formats: PDF, JPG, PNG. Max size: 5MB.
+                        </small>
+                    </div>
+                )}
 
                 {isEditing && (
                     <div className="mt-4 d-flex gap-3 position-sticky bottom-0 bg-white p-3 border-top" style={{zIndex: 50}}>

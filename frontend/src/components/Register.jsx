@@ -26,6 +26,7 @@ const Register = () => {
         mother_occ: '',
         father_income: '',
         semester: '1st',
+        course: 'cse',
         jee_rank: '',
         tenth_percent: '',
         twelfth_percent: '',
@@ -217,9 +218,9 @@ const Register = () => {
                             className="btn btn-primary w-100" 
                             disabled={!formData.jee_app_no}
                             onClick={() => { 
-                                const jeeRegex = /^(24|25|26)\d{10}$/;
+                                const jeeRegex = /^(22|23|24|25|26)\d{10}$/;
                                 if (!jeeRegex.test(formData.jee_app_no)) {
-                                    setError('Invalid JEE Number. Must be 12 digits starting with the year (e.g., 24XXXXXXXXXX)');
+                                    setError('Invalid JEE Number. Must be 12 digits starting with the year (e.g., 22/23/24/25/26)');
                                     return;
                                 }
                                 setError(''); 
@@ -341,8 +342,23 @@ const Register = () => {
                                         <option value="SC">SC</option><option value="ST">ST</option><option value="EWS">EWS</option>
                                     </select>
                                 </div>
-                                <div className="col-md-6 mb-3 d-flex align-items-center">
-                                    <div className="form-check pt-4">
+                                <div className="col-md-6 mb-3 text-start">
+                                    <label className="form-label">COURSE / BRANCH</label>
+                                    <select name="course" className="form-control" value={formData.course} onChange={handleChange}>
+                                        <option value="cse">CSE</option>
+                                        <option value="it">IT</option>
+                                        <option value="aiml">AIML</option>
+                                        <option value="electrical">Electrical</option>
+                                        <option value="electronics">Electronics</option>
+                                        <option value="mechanical">Mechanical</option>
+                                        <option value="civil">Civil</option>
+                                        <option value="biotech">Biotech</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="row">
+                                <div className="col-md-12 mb-3 d-flex align-items-center">
+                                    <div className="form-check pt-2">
                                         <input type="checkbox" name="is_disabled" className="form-check-input" checked={formData.is_disabled} onChange={handleChange} />
                                         <label className="form-check-label">Physically Disabled?</label>
                                     </div>

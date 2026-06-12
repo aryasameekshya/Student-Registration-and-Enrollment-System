@@ -170,7 +170,6 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                             <thead className="table-light">
                                 <tr style={{fontSize: '0.75rem', fontWeight: 800, color: '#64748b'}}>
                                     <th>COURSE CODE & NAME</th>
-                                    <th>INSTRUCTOR</th>
                                     <th>CAPACITY</th>
                                     <th>CREDITS</th>
                                     <th>ACTIONS</th>
@@ -183,7 +182,6 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                             <div className="fw-bold text-dark">{course.course_name}</div>
                                             <code className="text-primary">{course.course_code}</code>
                                         </td>
-                                        <td>{course.instructor || 'TBD'}</td>
                                         <td>
                                             <span className="badge bg-light text-dark">{course.enrolled || 0} / {course.capacity}</span>
                                         </td>
@@ -236,10 +234,6 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                         <label className="form-label fw-semibold text-muted small">PREREQUISITES</label>
                                                         <input type="text" name="prerequisites" className="form-control" placeholder="e.g. CS100" value={courseData.prerequisites} onChange={handleCourseChange} />
                                                     </div>
-                                                    <div className="col-md-12">
-                                                        <label className="form-label fw-semibold text-muted small">INSTRUCTOR</label>
-                                                        <input type="text" name="instructor" className="form-control" placeholder="Dr. Smith" value={courseData.instructor} onChange={handleCourseChange} />
-                                                    </div>
                                                     <div className="col-12">
                                                         <label className="form-label fw-semibold text-muted small">DESCRIPTION</label>
                                                         <textarea name="description" className="form-control" rows="3" value={courseData.description} onChange={handleCourseChange}></textarea>
@@ -265,9 +259,11 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                             <thead className="table-light">
                                 <tr style={{fontSize: '0.75rem', fontWeight: 800, color: '#64748b'}}>
                                     <th>STUDENT</th>
-                                    <th>COURSE</th>
+                                    <th>COURSE / BRANCH</th>
+                                    <th>APPROVAL STATUS</th>
+                                    <th>REMAINING SEATS</th>
                                     <th>DATE</th>
-                                    <th>STATUS</th>
+                                    <th>PAYMENT STATUS</th>
                                     <th>ACTIONS</th>
                                 </tr>
                             </thead>
@@ -279,13 +275,23 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                             <small className="text-muted">{enr.jee_app_no}</small>
                                         </td>
                                         <td>
-                                            <div className="fw-bold">{enr.course_name}</div>
-                                            <small className="text-muted">{enr.course_code}</small>
+                                            <div className="fw-bold text-uppercase">{enr.course_name}</div>
+                                            <small className={enr.type === 'Admission' ? 'badge bg-info-subtle text-info' : 'text-muted'}>
+                                                {enr.type === 'Admission' ? 'BRANCH ADMISSION' : enr.course_code}
+                                            </small>
                                         </td>
-                                        <td>{new Date(enr.enrolled_at).toLocaleDateString()}</td>
                                         <td>
                                             <span className={`badge ${enr.status === 'Approved' ? 'bg-success' : enr.status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark'}`}>
                                                 {enr.status}
+                                            </span>
+                                        </td>
+                                        <td className="fw-bold text-center">
+                                            {enr.remaining_seats} / {enr.capacity}
+                                        </td>
+                                        <td>{new Date(enr.enrolled_at).toLocaleDateString()}</td>
+                                        <td>
+                                            <span className={`badge ${enr.fee_status === 'Paid' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                                                {enr.fee_status === 'Paid' ? 'Paid' : 'Unpaid'}
                                             </span>
                                             {enr.status === 'Pending' && enr.current_enrolled >= enr.capacity && (
                                                 <div className="text-danger small mt-1"><i className="bi bi-exclamation-triangle-fill"></i> Full Capacity</div>
@@ -297,8 +303,11 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                     <button 
                                                         className="btn btn-sm btn-success" 
                                                         onClick={() => handleEnrollmentAction(enr.enrollment_id, 'approve')} 
-                                                        disabled={enr.current_enrolled >= enr.capacity}
-                                                        title={enr.current_enrolled >= enr.capacity ? 'Course is full' : 'Approve'}
+                                                        disabled={enr.current_enrolled >= enr.capacity || enr.fee_status !== 'Paid'}
+                                                        title={
+                                                            enr.fee_status !== 'Paid' ? 'Payment required before approval' :
+                                                            enr.current_enrolled >= enr.capacity ? 'Course is full' : 'Approve'
+                                                        }
                                                     >
                                                         <i className="bi bi-check-lg"></i> Approve
                                                     </button>
@@ -327,7 +336,7 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                 <tr style={{fontSize: '0.75rem', fontWeight: 800, color: '#64748b'}}>
                                     <th>NAME</th>
                                     <th>JEE APP NO</th>
-                                    <th>CASTE</th>
+                                    <th>BRANCH</th>
                                     <th>ACTION</th>
                                 </tr>
                             </thead>
@@ -339,7 +348,7 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                             <small className="text-muted">{student.email}</small>
                                         </td>
                                         <td><code className="text-primary fw-bold">{student.jee_app_no || 'NOT REGISTERED'}</code></td>
-                                        <td><span className="badge bg-soft-primary text-primary">{student.caste || 'N/A'}</span></td>
+                                        <td><span className="badge bg-soft-primary text-primary text-uppercase">{student.branch || 'N/A'}</span></td>
                                         <td>
                                             <div className="d-flex gap-2">
                                                 <button 
@@ -408,7 +417,11 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                             <label className="profile-label">JEE AIR Rank</label>
                                                             <p className="profile-value">{selectedStudent.jee_rank}</p>
                                                         </div>
-                                                         <div className="col-md-6 col-lg-4">
+                                                        <div className="col-md-6 col-lg-4">
+                                                            <label className="profile-label">Course / Branch</label>
+                                                            <p className="profile-value text-uppercase">{selectedStudent.course || 'N/A'}</p>
+                                                        </div>
+                                                        <div className="col-md-6 col-lg-4">
                                                             <label className="profile-label">Phone</label>
                                                             <p className="profile-value">{selectedStudent.phone}</p>
                                                         </div>
@@ -430,7 +443,7 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                         </div>
                                                     </div>
 
-                                                    <h6 className="fw-bold mb-3 border-bottom pb-2">Academic Performance</h6>
+                                                    <h6 className="fw-bold mb-3 border-bottom pb-2">Academic Performance (SGPA)</h6>
                                                     <div className="row g-3 mb-4">
                                                         <div className="col-md-6">
                                                             <div className="p-3 bg-light rounded-3">
@@ -444,6 +457,33 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                                 <p className="profile-value mb-0">{selectedStudent.twelfth_percent}% ({selectedStudent.twelfth_pass_year})</p>
                                                             </div>
                                                         </div>
+                                                    </div>
+
+                                                    <div className="row g-3 mb-4">
+                                                        {selectedStudent.sgpa && (
+                                                            <div className="col-md-6">
+                                                                <label className="profile-label text-primary fw-bold">Latest Semester SGPA</label>
+                                                                <div className="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-10 d-flex align-items-center">
+                                                                    <i className="bi bi-graph-up-arrow me-3 text-primary"></i>
+                                                                    <div>
+                                                                        <span className="fs-4 fw-bold text-primary">{selectedStudent.sgpa}</span>
+                                                                        <span className="text-muted ms-2 small">/ 10.0</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {selectedStudent.cgpa && (
+                                                            <div className="col-md-6">
+                                                                <label className="profile-label text-success fw-bold">Cumulative CGPA</label>
+                                                                <div className="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-10 d-flex align-items-center">
+                                                                    <i className="bi bi-mortarboard me-3 text-success"></i>
+                                                                    <div>
+                                                                        <span className="fs-4 fw-bold text-success">{selectedStudent.cgpa}</span>
+                                                                        <span className="text-muted ms-2 small">/ 10.0</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     <h6 className="fw-bold mb-3 border-bottom pb-2">Documents</h6>

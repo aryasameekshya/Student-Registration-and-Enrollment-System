@@ -116,7 +116,7 @@ def register_details():
     # Fields to extract
     fields = [
         'jee_app_no', 'dob', 'gender', 'nationality', 'blood_group', 
-        'caste', 'aadhaar_no', 'phone', 'address', 'semester',
+        'caste', 'aadhaar_no', 'phone', 'address', 'semester', 'course',
         'father_name', 'mother_name', 'father_occ', 'mother_occ', 'father_income',
         'is_disabled', 'jee_rank', 'tenth_percent', 'twelfth_percent', 
         'tenth_pass_year', 'twelfth_pass_year'
@@ -139,11 +139,11 @@ def register_details():
         query = """
         INSERT INTO students (
             user_id, jee_app_no, dob, gender, nationality, blood_group, 
-            caste, aadhaar_no, phone, address, semester,
+            caste, aadhaar_no, phone, address, semester, course,
             father_name, mother_name, father_occ, mother_occ, father_income,
             is_disabled, jee_rank, tenth_percent, twelfth_percent, 
             tenth_pass_year, twelfth_pass_year
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             jee_app_no = VALUES(jee_app_no),
             dob = VALUES(dob),
@@ -155,6 +155,7 @@ def register_details():
             phone = VALUES(phone),
             address = VALUES(address),
             semester = VALUES(semester),
+            course = VALUES(course),
             father_name = VALUES(father_name),
             mother_name = VALUES(mother_name),
             father_occ = VALUES(father_occ),
@@ -169,7 +170,7 @@ def register_details():
         """
         cursor.execute(query, (
             user_id, values['jee_app_no'], values['dob'], values['gender'], values['nationality'], values['blood_group'],
-            values['caste'], values['aadhaar_no'], values['phone'], values['address'], values['semester'],
+            values['caste'], values['aadhaar_no'], values['phone'], values['address'], values['semester'], values['course'],
             values['father_name'], values['mother_name'], values['father_occ'], values['mother_occ'], values['father_income'],
             values['is_disabled'], values['jee_rank'], values['tenth_percent'], values['twelfth_percent'],
             values['tenth_pass_year'], values['twelfth_pass_year']
