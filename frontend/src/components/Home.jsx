@@ -8,6 +8,8 @@ import StudentProfile from './StudentProfile';
 import AdminDashboardStats from './AdminDashboardStats';
 import NotificationPanel from './NotificationPanel';
 import AdminProfile from './AdminProfile';
+import SemesterRegistration from './SemesterRegistration';
+import StudentDashboardStats from './StudentDashboardStats';
 
 
 const Home = () => {
@@ -112,6 +114,12 @@ const Home = () => {
                                 <i className="bi bi-journal-bookmark-fill me-3"></i> <span>Manage Courses</span>
                             </button>
                             <button
+                                className={`nav-item ${activeTab === 'admin-departments' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('admin-departments')}
+                            >
+                                <i className="bi bi-building me-3"></i> <span>Manage Departments</span>
+                            </button>
+                            <button
                                 className={`nav-item ${activeTab === 'admin-enrollments' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('admin-enrollments')}
                             >
@@ -125,12 +133,26 @@ const Home = () => {
                             </button>
                         </>
                     ) : (
-                        <button 
-                            className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('courses')}
-                        >
-                            <i className="bi bi-book-half me-3"></i> <span>Select Courses</span>
-                        </button>
+                        <>
+                            <button 
+                                className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('courses')}
+                            >
+                                <i className="bi bi-book-half me-3"></i> <span>Select Courses</span>
+                            </button>
+                            <button 
+                                className={`nav-item ${activeTab === 'enrollment_status' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('enrollment_status')}
+                            >
+                                <i className="bi bi-clipboard-check me-3"></i> <span>My Enrollment Status</span>
+                            </button>
+                            <button 
+                                className={`nav-item ${activeTab === 'semester-registration' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('semester-registration')}
+                            >
+                                <i className="bi bi-pencil-square me-3"></i> <span>Register</span>
+                            </button>
+                        </>
                     )}
 
                     {canContinueRegistration && (
@@ -187,15 +209,9 @@ const Home = () => {
                                          </div>
                                      )}
 
-                                     {/* Notification Alert for Students */}
                                      {user.role === 'student' && !canContinueRegistration && (
-                                         <div className="alert alert-info mt-3 border-0 shadow-sm" style={{borderRadius: '12px', background: 'rgba(59, 130, 246, 0.05)'}}>
-                                             <div className="d-flex align-items-center">
-                                                 <i className="bi bi-info-circle-fill text-primary fs-5 me-3"></i>
-                                                 <div className="small">
-                                                     Check your <span className="fw-bold">notifications</span> for updates on your enrollment requests.
-                                                 </div>
-                                             </div>
+                                         <div className="mt-4">
+                                             <StudentDashboardStats showTable={true} />
                                          </div>
                                      )}
 
@@ -203,6 +219,8 @@ const Home = () => {
                                 <AdminDashboardStats />
                             )}
                         </div>
+                    ) : activeTab === 'enrollment_status' ? (
+                        <StudentDashboardStats showTable={true} />
                     ) : activeTab === 'profile' ? (
                         <div className="animate-fadeIn">
                              <StudentProfile user={user} />
@@ -219,6 +237,10 @@ const Home = () => {
                         <div className="portal-card">
                              <AdminPanel activeTab="courses" onCourseAdded={handleCourseAdded} />
                         </div>
+                    ) : activeTab === 'admin-departments' ? (
+                        <div className="portal-card">
+                             <AdminPanel activeTab="departments" />
+                        </div>
                     ) : activeTab === 'admin-enrollments' ? (
                         <div className="portal-card">
                              <AdminPanel activeTab="enrollments" />
@@ -227,9 +249,9 @@ const Home = () => {
                         <div className="portal-card">
                              <AdminPanel activeTab="reports" />
                         </div>
-                    ) : activeTab === 'courses' ? (
+                    ) : activeTab === 'semester-registration' ? (
                         <div className="animate-fadeIn">
-                            <CourseList key={refreshKey} user={user} />
+                            <SemesterRegistration />
                         </div>
                     ) : (
                         <div className="animate-fadeIn">

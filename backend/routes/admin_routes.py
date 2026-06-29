@@ -57,7 +57,7 @@ def list_students():
     cursor = conn.cursor(dictionary=True)
     
     query = """
-    SELECT u.id, u.name, u.email, s.jee_app_no, s.caste
+    SELECT u.id, u.name, u.email, s.department, s.program, s.caste
     FROM users u
     LEFT JOIN students s ON u.id = s.user_id
     WHERE u.role = 'student'
@@ -77,12 +77,12 @@ def get_student_detail(student_id):
     
     query = """
     SELECT u.id, u.name, u.email, u.role, 
-           s.jee_app_no, s.dob, s.gender, s.nationality, s.blood_group, 
+           s.dob, s.gender, s.nationality, s.blood_group, 
            s.caste, s.aadhaar_no, s.is_disabled, 
-           s.phone, s.address, s.semester,
+           s.phone, s.address, s.semester, s.department, s.program,
            s.father_name, s.mother_name, s.father_occ, s.mother_occ, s.father_income,
-           s.jee_rank, s.tenth_percent, s.twelfth_percent,
-           s.tenth_pass_year, s.twelfth_pass_year
+           s.tenth_percent, s.twelfth_percent,
+           s.tenth_pass_year, s.twelfth_pass_year, s.prev_sem_cgpa
     FROM users u
     LEFT JOIN students s ON u.id = s.user_id
     WHERE u.id = %s
@@ -120,7 +120,52 @@ def delete_student(student_id):
         cursor.close()
         conn.close()
 
-# Course Management
+# Department Management
+@admin.route('/admin/departments', methods=['GET'])
+@admin_required
+def get_departments():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM departments ORDER BY name ASC")
+    depts = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify(depts)
+
+@admin.route('/admin/department/add', methods=['POST'])
+@admin_required
+def add_department():
+    name = request.json.get('name')
+    if not name:
+        return jsonify({"message": "Department name is required"}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO departments (name) VALUES (%s)", (name,))
+        conn.commit()
+        return jsonify({"message": "Department added successfully"}), 201
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        conn.close()
+
+@admin.route('/admin/department/delete/<int:dept_id>', methods=['DELETE', 'POST'])
+@admin_required
+def delete_department(dept_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM departments WHERE id = %s", (dept_id,))
+        conn.commit()
+        return jsonify({"message": "Department deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        conn.close()
+
+# Student Management
 @admin.route('/admin/courses', methods=['GET'])
 @admin_required
 def get_courses():
@@ -143,6 +188,9 @@ def add_course():
     data = request.json
     course_name = data.get('course_name')
     course_code = data.get('course_code')
+    department = data.get('department')
+    semester = data.get('semester')
+    course_type = data.get('course_type', 'Core')
     capacity = data.get('capacity', 50)
     credits = data.get('credits', 3)
     prerequisites = data.get('prerequisites')
@@ -157,9 +205,9 @@ def add_course():
     try:
         cursor.execute(
             """INSERT INTO courses 
-               (course_name, course_code, capacity, credits, prerequisites, description, instructor) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-            (course_name, course_code, capacity, credits, prerequisites, description, instructor)
+               (course_name, course_code, department, semester, course_type, capacity, credits, prerequisites, description, instructor) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (course_name, course_code, department, semester, course_type, capacity, credits, prerequisites, description, instructor)
         )
         conn.commit()
         return jsonify({"message": "Course added successfully"}), 201
@@ -179,7 +227,7 @@ def edit_course(course_id):
         
         update_fields = []
         values = []
-        for field in ['course_name', 'course_code', 'capacity', 'credits', 'prerequisites', 'description', 'instructor']:
+        for field in ['course_name', 'course_code', 'department', 'semester', 'course_type', 'capacity', 'credits', 'prerequisites', 'description', 'instructor', 'is_active']:
             if field in data:
                 update_fields.append(f"{field} = %s")
                 values.append(data[field])
@@ -214,6 +262,27 @@ def delete_course(course_id):
         cursor.close()
         conn.close()
 
+@admin.route('/admin/course/status/<int:course_id>', methods=['POST'])
+@admin_required
+def toggle_course_status(course_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT is_active FROM courses WHERE id = %s", (course_id,))
+        course = cursor.fetchone()
+        if not course:
+            return jsonify({"message": "Course not found"}), 404
+        
+        new_status = not course['is_active']
+        cursor.execute("UPDATE courses SET is_active = %s WHERE id = %s", (new_status, course_id))
+        conn.commit()
+        return jsonify({"message": f"Course {'enabled' if new_status else 'disabled'} successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        conn.close()
+
 # Enrollment Management
 @admin.route('/admin/enrollments', methods=['GET'])
 @admin_required
@@ -222,7 +291,7 @@ def get_all_enrollments():
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
         SELECT e.id as enrollment_id, e.status, e.enrolled_at, 
-               s.name as student_name, sp.jee_app_no,
+               s.name as student_name, sp.department, sp.program,
                c.id as course_id, c.course_name, c.course_code, c.capacity
         FROM enrollments e
         JOIN users s ON e.student_id = s.id
@@ -301,8 +370,9 @@ def report_students():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        # (Department breakdown removed as students haven't selected one yet)
-        dept_data = []
+        # Department breakdown
+        cursor.execute("SELECT department, COUNT(*) as count FROM students WHERE department IS NOT NULL GROUP BY department")
+        dept_data = cursor.fetchall()
         
         # Gender breakdown
         cursor.execute("SELECT gender, COUNT(*) as count FROM students GROUP BY gender")
@@ -312,14 +382,14 @@ def report_students():
         cursor.execute("SELECT caste, COUNT(*) as count FROM students GROUP BY caste")
         caste_data = cursor.fetchall()
         
-        # JEE Rank Distribution (Summary)
+        # CGPA Distribution (Summary) instead of JEE Rank
         cursor.execute("""
             SELECT 
                 CASE 
-                    WHEN jee_rank < 50000 THEN 'Top 50k'
-                    WHEN jee_rank < 100000 THEN '50k - 100k'
-                    WHEN jee_rank < 200000 THEN '100k - 200k'
-                    ELSE '200k+'
+                    WHEN prev_sem_cgpa >= 9.0 THEN '9.0 - 10.0'
+                    WHEN prev_sem_cgpa >= 8.0 THEN '8.0 - 9.0'
+                    WHEN prev_sem_cgpa >= 7.0 THEN '7.0 - 8.0'
+                    ELSE 'Below 7.0'
                 END as rank_range,
                 COUNT(*) as count
             FROM students
@@ -331,7 +401,7 @@ def report_students():
             "departments": dept_data,
             "gender": gender_data,
             "caste": caste_data,
-            "jee_ranks": rank_data
+            "academic_performance": rank_data
         })
     except Exception as e:
         return jsonify({"message": str(e)}), 400

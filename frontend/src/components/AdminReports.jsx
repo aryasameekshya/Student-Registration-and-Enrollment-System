@@ -93,9 +93,9 @@ const AdminReports = () => {
                     </div>
                     <div className="col-lg-6">
                         <div className="portal-card p-4 shadow-sm bg-white h-100" style={{borderRadius: '16px'}}>
-                            <h6 className="text-muted small fw-bold mb-4">JEE RANK RANGE</h6>
+                            <h6 className="text-muted small fw-bold mb-4">ACADEMIC PERFORMANCE (CGPA)</h6>
                             <div className="mt-3">
-                                {studentData.jee_ranks.map((range, idx) => (
+                                {studentData.academic_performance.map((range, idx) => (
                                     <div key={idx} className="mb-3">
                                         <div className="d-flex justify-content-between mb-1">
                                             <span className="small fw-semibold">{range.rank_range}</span>

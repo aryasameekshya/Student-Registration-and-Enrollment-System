@@ -81,13 +81,13 @@ const Login = () => {
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label className="form-label">
-                            {isAdmin ? 'ADMIN EMAIL' : 'JEE APPLICATION NUMBER OR EMAIL'}
+                            EMAIL ADDRESS
                         </label>
                         <input
-                            type={isAdmin ? "email" : "text"}
+                            type="email"
                             name="identifier"
                             className="form-control"
-                            placeholder={isAdmin ? "admin@example.com" : "24XXXXXXXXXX"}
+                            placeholder="email@example.com"
                             value={formData.identifier}
                             onChange={handleChange}
                             required

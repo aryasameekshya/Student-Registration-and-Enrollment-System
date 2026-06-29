@@ -7,12 +7,18 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
     const [students, setStudents] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
     
+    // Academic Structure State
+    const [departments, setDepartments] = useState([]);
+    const [newDeptName, setNewDeptName] = useState('');
+    
     // Course Management State
     const [courses, setCourses] = useState([]);
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
     const defaultCourseState = {
-        course_name: '', course_code: '', capacity: 50, credits: 3, prerequisites: '', instructor: '', description: ''
+        course_name: '', course_code: '', department: '', semester: '', 
+        course_type: 'Core', capacity: 50, credits: 3, prerequisites: '', 
+        instructor: '', description: '', is_active: true
     };
     const [courseData, setCourseData] = useState(defaultCourseState);
     
@@ -27,8 +33,11 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
             fetchStudents();
         } else if (activeTab === 'courses') {
             fetchCourses();
+            fetchDepartments();
         } else if (activeTab === 'enrollments') {
             fetchEnrollments();
+        } else if (activeTab === 'departments') {
+            fetchDepartments();
         }
     }, [activeTab]);
 
@@ -137,6 +146,52 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
         }
     };
 
+    const fetchDepartments = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get('http://localhost:5000/admin/departments', { withCredentials: true });
+            setDepartments(res.data);
+        } catch (err) {
+            setError('Failed to fetch departments');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddDepartment = async (e) => {
+        e.preventDefault();
+        if (!newDeptName || !newDeptName.trim()) return;
+        setLoading(true);
+        try {
+            await axios.post('http://localhost:5000/admin/department/add', { name: newDeptName }, { withCredentials: true });
+            setNewDeptName('');
+            fetchDepartments();
+        } catch (err) {
+            alert('Failed to add department');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteDepartment = async (id) => {
+        if (!window.confirm("Delete this department?")) return;
+        try {
+            await axios.post(`http://localhost:5000/admin/department/delete/${id}`, {}, { withCredentials: true });
+            fetchDepartments();
+        } catch (err) {
+            alert('Failed to delete department');
+        }
+    };
+
+    const toggleCourseStatus = async (id) => {
+        try {
+            await axios.post(`http://localhost:5000/admin/course/status/${id}`, {}, { withCredentials: true });
+            fetchCourses();
+        } catch (err) {
+            alert('Failed to toggle course status');
+        }
+    };
+
     const handleEnrollmentAction = async (id, action) => {
         try {
             await axios.post(`http://localhost:5000/admin/enrollment/${action}/${id}`, {}, { withCredentials: true });
@@ -169,32 +224,50 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                         <table className="table table-hover align-middle">
                             <thead className="table-light">
                                 <tr style={{fontSize: '0.75rem', fontWeight: 800, color: '#64748b'}}>
-                                    <th>COURSE CODE & NAME</th>
-                                    <th>INSTRUCTOR</th>
+                                    <th>COURSE</th>
+                                    <th>DEPT & SEM</th>
+                                    <th>TYPE</th>
+                                    <th>STATUS</th>
                                     <th>CAPACITY</th>
-                                    <th>CREDITS</th>
                                     <th>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {courses.map(course => (
-                                    <tr key={course.id}>
+                                    <tr key={course.id} className={!course.is_active ? 'opacity-50' : ''}>
                                         <td>
                                             <div className="fw-bold text-dark">{course.course_name}</div>
-                                            <code className="text-primary">{course.course_code}</code>
+                                            <code className="text-primary small">{course.course_code}</code>
                                         </td>
-                                        <td>{course.instructor || 'TBD'}</td>
+                                        <td>
+                                            <div className="small fw-semibold">{course.department || 'N/A'}</div>
+                                            <div className="text-muted small">Sem: {course.semester || 'N/A'}</div>
+                                        </td>
+                                        <td><span className="badge bg-light text-dark">{course.course_type}</span></td>
+                                        <td>
+                                            <span className={`badge ${course.is_active ? 'bg-success' : 'bg-secondary'}`}>
+                                                {course.is_active ? 'Active' : 'Disabled'}
+                                            </span>
+                                        </td>
                                         <td>
                                             <span className="badge bg-light text-dark">{course.enrolled || 0} / {course.capacity}</span>
                                         </td>
-                                        <td>{course.credits}</td>
                                         <td>
-                                            <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEditCourseClick(course)}>
-                                                <i className="bi bi-pencil-square"></i>
-                                            </button>
-                                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteCourse(course.id)}>
-                                                <i className="bi bi-trash"></i>
-                                            </button>
+                                            <div className="d-flex gap-2">
+                                                <button className="btn btn-sm btn-outline-secondary" onClick={() => handleEditCourseClick(course)} title="Edit">
+                                                    <i className="bi bi-pencil-square"></i>
+                                                </button>
+                                                <button 
+                                                    className={`btn btn-sm ${course.is_active ? 'btn-outline-warning' : 'btn-outline-success'}`} 
+                                                    onClick={() => toggleCourseStatus(course.id)}
+                                                    title={course.is_active ? 'Disable' : 'Enable'}
+                                                >
+                                                    <i className={`bi ${course.is_active ? 'bi-slash-circle' : 'bi-check-circle'}`}></i>
+                                                </button>
+                                                <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteCourse(course.id)} title="Delete">
+                                                    <i className="bi bi-trash"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -221,11 +294,33 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                         <input type="text" name="course_name" className="form-control" placeholder="e.g. Data Structures" value={courseData.course_name} onChange={handleCourseChange} required />
                                                     </div>
                                                     <div className="col-md-4">
-                                                        <label className="form-label fw-semibold text-muted small">COURSE CODE</label>
+                                                        <label className="form-label fw-semibold text-muted small">COURSE CODE (ID)</label>
                                                         <input type="text" name="course_code" className="form-control" placeholder="e.g. CS101" value={courseData.course_code} onChange={handleCourseChange} required />
                                                     </div>
+                                                    <div className="col-md-6">
+                                                        <label className="form-label fw-semibold text-muted small">DEPARTMENT</label>
+                                                        <select name="department" className="form-select" value={courseData.department} onChange={handleCourseChange} required>
+                                                            <option value="">Select Department</option>
+                                                            {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-md-3">
+                                                        <label className="form-label fw-semibold text-muted small">SEMESTER</label>
+                                                        <select name="semester" className="form-select" value={courseData.semester} onChange={handleCourseChange} required>
+                                                            <option value="">Select</option>
+                                                            {['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'].map(s => <option key={s} value={s}>{s}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-md-3">
+                                                        <label className="form-label fw-semibold text-muted small">TYPE</label>
+                                                        <select name="course_type" className="form-select" value={courseData.course_type} onChange={handleCourseChange}>
+                                                            <option value="Core">Core</option>
+                                                            <option value="Elective">Elective</option>
+                                                            <option value="Lab">Lab</option>
+                                                        </select>
+                                                    </div>
                                                     <div className="col-md-4">
-                                                        <label className="form-label fw-semibold text-muted small">TOTAL CAPACITY</label>
+                                                        <label className="form-label fw-semibold text-muted small">CAPACITY</label>
                                                         <input type="number" name="capacity" className="form-control" min="1" value={courseData.capacity} onChange={handleCourseChange} required />
                                                     </div>
                                                     <div className="col-md-4">
@@ -233,16 +328,16 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                         <input type="number" name="credits" className="form-control" min="1" value={courseData.credits} onChange={handleCourseChange} required />
                                                     </div>
                                                     <div className="col-md-4">
-                                                        <label className="form-label fw-semibold text-muted small">PREREQUISITES</label>
-                                                        <input type="text" name="prerequisites" className="form-control" placeholder="e.g. CS100" value={courseData.prerequisites} onChange={handleCourseChange} />
+                                                        <label className="form-label fw-semibold text-muted small">INSTRUCTOR (OPTIONAL)</label>
+                                                        <input type="text" name="instructor" className="form-control" placeholder="Dr. Smith" value={courseData.instructor} onChange={handleCourseChange} />
                                                     </div>
                                                     <div className="col-md-12">
-                                                        <label className="form-label fw-semibold text-muted small">INSTRUCTOR</label>
-                                                        <input type="text" name="instructor" className="form-control" placeholder="Dr. Smith" value={courseData.instructor} onChange={handleCourseChange} />
+                                                        <label className="form-label fw-semibold text-muted small">PREREQUISITES</label>
+                                                        <input type="text" name="prerequisites" className="form-control" placeholder="e.g. CS100, CS101" value={courseData.prerequisites} onChange={handleCourseChange} />
                                                     </div>
                                                     <div className="col-12">
                                                         <label className="form-label fw-semibold text-muted small">DESCRIPTION</label>
-                                                        <textarea name="description" className="form-control" rows="3" value={courseData.description} onChange={handleCourseChange}></textarea>
+                                                        <textarea name="description" className="form-control" rows="2" value={courseData.description} onChange={handleCourseChange}></textarea>
                                                     </div>
                                                 </div>
                                             </div>
@@ -256,6 +351,52 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                             </div>
                         </div>
                     )}
+                </div>
+            ) : activeTab === 'departments' ? (
+                <div className="portal-card relative">
+                    <h4 className="fw-bold text-dark mb-4">Manage Departments</h4>
+                    
+                    <form onSubmit={handleAddDepartment} className="mb-5 p-4 bg-light rounded-4">
+                        <label className="form-label fw-bold text-muted small">ADD NEW DEPARTMENT</label>
+                        <div className="d-flex gap-2">
+                            <input 
+                                type="text" 
+                                className="form-control" 
+                                placeholder="e.g. Computer Science & Engineering"
+                                value={newDeptName}
+                                onChange={(e) => setNewDeptName(e.target.value)}
+                                required
+                            />
+                            <button type="submit" className="btn btn-primary px-4" disabled={loading} style={{width: 'auto'}}>
+                                <i className="bi bi-plus-lg me-2"></i>Add
+                            </button>
+                        </div>
+                    </form>
+
+                    <div className="table-responsive">
+                        <table className="table table-hover align-middle">
+                            <thead className="table-light">
+                                <tr style={{fontSize: '0.75rem', fontWeight: 800, color: '#64748b'}}>
+                                    <th>ID</th>
+                                    <th>DEPARTMENT NAME</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {departments.map(dept => (
+                                    <tr key={dept.id}>
+                                        <td><span className="text-muted small fw-bold">#{dept.id}</span></td>
+                                        <td className="fw-bold text-dark">{dept.name}</td>
+                                        <td>
+                                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteDepartment(dept.id)}>
+                                                <i className="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             ) : activeTab === 'enrollments' ? (
                 <div className="portal-card relative">
@@ -276,7 +417,6 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                     <tr key={enr.enrollment_id}>
                                         <td>
                                             <div className="fw-bold text-dark">{enr.student_name}</div>
-                                            <small className="text-muted">{enr.jee_app_no}</small>
                                         </td>
                                         <td>
                                             <div className="fw-bold">{enr.course_name}</div>
@@ -326,7 +466,7 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                             <thead className="table-light">
                                 <tr style={{fontSize: '0.75rem', fontWeight: 800, color: '#64748b'}}>
                                     <th>NAME</th>
-                                    <th>JEE APP NO</th>
+                                    <th>EMAIL</th>
                                     <th>CASTE</th>
                                     <th>ACTION</th>
                                 </tr>
@@ -336,9 +476,8 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                     <tr key={student.id}>
                                         <td>
                                             <div className="fw-bold text-dark">{student.name}</div>
-                                            <small className="text-muted">{student.email}</small>
                                         </td>
-                                        <td><code className="text-primary fw-bold">{student.jee_app_no || 'NOT REGISTERED'}</code></td>
+                                        <td><small className="text-muted">{student.email}</small></td>
                                         <td><span className="badge bg-soft-primary text-primary">{student.caste || 'N/A'}</span></td>
                                         <td>
                                             <div className="d-flex gap-2">
@@ -373,13 +512,23 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                             <button type="button" className="btn-close" onClick={() => setSelectedStudent(null)}></button>
                                         </div>
                                         <div className="modal-body p-4">
-                                            {selectedStudent.jee_app_no ? (
+                                            {selectedStudent ? (
                                                 <>
                                                     <div className="row g-4 mb-4">
                                                         <div className="col-md-6 col-lg-4">
-                                                            <label className="profile-label">JEE Application No</label>
-                                                            <p className="profile-value">{selectedStudent.jee_app_no}</p>
+                                                            <label className="profile-label">Department</label>
+                                                            <p className="profile-value text-primary fw-bold">{selectedStudent.department || 'N/A'}</p>
                                                         </div>
+                                                        <div className="col-md-6 col-lg-4">
+                                                            <label className="profile-label">Program & Semester</label>
+                                                            <p className="profile-value">{selectedStudent.program || 'N/A'} ({selectedStudent.semester || 'N/A'})</p>
+                                                        </div>
+                                                        <div className="col-md-6 col-lg-4">
+                                                            <label className="profile-label">Previous Sem CGPA</label>
+                                                            <p className="profile-value">{selectedStudent.prev_sem_cgpa || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="row g-4 mb-4">
                                                         <div className="col-md-6 col-lg-4">
                                                             <label className="profile-label">Aadhaar Number</label>
                                                             <p className="profile-value">{selectedStudent.aadhaar_no}</p>
@@ -404,31 +553,12 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                             <label className="profile-label">Caste / Category</label>
                                                             <p className="profile-value">{selectedStudent.caste}</p>
                                                         </div>
-                                                        <div className="col-md-6 col-lg-4">
-                                                            <label className="profile-label">JEE AIR Rank</label>
-                                                            <p className="profile-value">{selectedStudent.jee_rank}</p>
-                                                        </div>
                                                          <div className="col-md-6 col-lg-4">
                                                             <label className="profile-label">Phone</label>
                                                             <p className="profile-value">{selectedStudent.phone}</p>
                                                         </div>
                                                     </div>
 
-                                                    <h6 className="fw-bold mb-3 border-bottom pb-2">Family Information</h6>
-                                                    <div className="row g-3 mb-4">
-                                                        <div className="col-md-6">
-                                                            <label className="profile-label">Father's Name & Occ.</label>
-                                                            <p className="profile-value mb-0">{selectedStudent.father_name} ({selectedStudent.father_occ})</p>
-                                                        </div>
-                                                        <div className="col-md-6">
-                                                            <label className="profile-label">Mother's Name & Occ.</label>
-                                                            <p className="profile-value mb-0">{selectedStudent.mother_name} ({selectedStudent.mother_occ})</p>
-                                                        </div>
-                                                        <div className="col-md-12">
-                                                             <label className="profile-label">Annual Income</label>
-                                                             <p className="profile-value mb-0">₹ {selectedStudent.father_income}</p>
-                                                        </div>
-                                                    </div>
 
                                                     <h6 className="fw-bold mb-3 border-bottom pb-2">Academic Performance</h6>
                                                     <div className="row g-3 mb-4">
@@ -446,27 +576,11 @@ const AdminPanel = ({ activeTab = 'dashboard', onCourseAdded }) => {
                                                         </div>
                                                     </div>
 
-                                                    <h6 className="fw-bold mb-3 border-bottom pb-2">Documents</h6>
-                                                    <div className="row g-2">
-                                                        {selectedStudent.documents.map((doc, idx) => (
-                                                            <div key={idx} className="col-md-6">
-                                                                <a 
-                                                                    href={`http://localhost:5000${doc.url}`} 
-                                                                    target="_blank" 
-                                                                    rel="noopener noreferrer"
-                                                                    className="doc-item text-decoration-none"
-                                                                >
-                                                                    <div className="doc-icon"><i className="bi bi-file-earmark-pdf"></i></div>
-                                                                    <div className="doc-name">{formatLabel(doc.type)}</div>
-                                                                </a>
-                                                            </div>
-                                                        ))}
-                                                    </div>
                                                 </>
                                             ) : (
                                                 <div className="text-center py-5 text-muted">
-                                                    <i className="bi bi-exclamation-circle fs-1 mb-3 opacity-25"></i>
-                                                    <p>This student has not yet completed their registration details.</p>
+                                                    <i className="bi bi-person-check fs-1 mb-3 opacity-25"></i>
+                                                    <p>Student registration data is viewable below.</p>
                                                 </div>
                                             )}
                                         </div>

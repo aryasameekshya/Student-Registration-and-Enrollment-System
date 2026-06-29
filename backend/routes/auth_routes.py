@@ -18,11 +18,15 @@ def register():
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
+    phone = data.get('phone')
     role = data.get('role', 'student')
     admin_key = data.get('admin_key')
 
     if not name or not email or not password:
         return jsonify({"message": "Missing required fields"}), 400
+
+    if role == 'student' and not phone:
+        return jsonify({"message": "Phone number is required for students"}), 400
 
     # Security Check for Admin registration
     if role == 'admin' and admin_key != ADMIN_SECRET_KEY:
@@ -34,19 +38,28 @@ def register():
     cursor = conn.cursor()
 
     try:
+        # Set registration_step to 7 immediately to skip multi-step details
         cursor.execute(
-            "INSERT INTO users (name, email, password, role, registration_step) VALUES (%s,%s,%s,%s, 3)",
+            "INSERT INTO users (name, email, password, role, registration_step) VALUES (%s,%s,%s,%s, 7)",
             (name, email, hashed, role)
         )
-        conn.commit()
         user_id = cursor.lastrowid
+        
+        if role == 'student':
+            # Create student profile with phone
+            cursor.execute(
+                "INSERT INTO students (user_id, phone) VALUES (%s, %s)",
+                (user_id, phone)
+            )
+            
+        conn.commit()
     except Exception as e:
         return jsonify({"message": str(e)}), 400
     finally:
         cursor.close()
         conn.close()
 
-    return jsonify({"message": "User registered", "id": user_id, "registration_step": 3}), 201
+    return jsonify({"message": "User registered successfully", "id": user_id, "registration_step": 7}), 201
 
 
 @auth.route('/login', methods=['POST'])
@@ -62,17 +75,16 @@ def login():
 
     user = None
     if role == 'student':
-        # Find user by JEE Application Number OR Email
+        # Find user by Email
         query = """
-        SELECT u.*, s.jee_app_no FROM users u
-        LEFT JOIN students s ON u.id = s.user_id
-        WHERE (s.jee_app_no = %s OR u.email = %s) AND u.role = 'student'
+        SELECT u.* FROM users u
+        WHERE u.email = %s AND u.role = 'student'
         """
-        cursor.execute(query, (identifier, identifier))
+        cursor.execute(query, (identifier,))
         user = cursor.fetchone()
     else:
-        # Find user by Email (for Admins)
-        cursor.execute("SELECT * FROM users WHERE email=%s AND role = 'admin'", (identifier,))
+        # Check for user by email
+        cursor.execute("SELECT * FROM users WHERE email = %s", (identifier,))
         user = cursor.fetchone()
 
     cursor.close()
@@ -97,8 +109,7 @@ def login():
                     "name": user['name'],
                     "email": user['email'],
                     "role": user['role'],
-                    "registration_step": user.get('registration_step', 7),
-                    "jee_app_no": user.get('jee_app_no')
+                    "registration_step": user.get('registration_step', 7)
                 }
             })
 
@@ -115,11 +126,11 @@ def register_details():
 
     # Fields to extract
     fields = [
-        'jee_app_no', 'dob', 'gender', 'nationality', 'blood_group', 
+        'dob', 'gender', 'nationality', 'blood_group', 
         'caste', 'aadhaar_no', 'phone', 'address', 'semester',
         'father_name', 'mother_name', 'father_occ', 'mother_occ', 'father_income',
-        'is_disabled', 'jee_rank', 'tenth_percent', 'twelfth_percent', 
-        'tenth_pass_year', 'twelfth_pass_year'
+        'is_disabled', 'tenth_percent', 'twelfth_percent', 
+        'tenth_pass_year', 'twelfth_pass_year', 'department', 'program', 'prev_sem_cgpa'
     ]
     
     # Sanitize: convert empty strings to None (NULL in MySQL) for numerical/date fields
@@ -138,14 +149,13 @@ def register_details():
         # Check if student record exists, then upsert
         query = """
         INSERT INTO students (
-            user_id, jee_app_no, dob, gender, nationality, blood_group, 
+            user_id, dob, gender, nationality, blood_group, 
             caste, aadhaar_no, phone, address, semester,
             father_name, mother_name, father_occ, mother_occ, father_income,
-            is_disabled, jee_rank, tenth_percent, twelfth_percent, 
-            tenth_pass_year, twelfth_pass_year
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            is_disabled, tenth_percent, twelfth_percent, 
+            tenth_pass_year, twelfth_pass_year, department, program, prev_sem_cgpa
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
-            jee_app_no = VALUES(jee_app_no),
             dob = VALUES(dob),
             gender = VALUES(gender),
             nationality = VALUES(nationality),
@@ -161,18 +171,20 @@ def register_details():
             mother_occ = VALUES(mother_occ),
             father_income = VALUES(father_income),
             is_disabled = VALUES(is_disabled),
-            jee_rank = VALUES(jee_rank),
             tenth_percent = VALUES(tenth_percent),
             twelfth_percent = VALUES(twelfth_percent),
             tenth_pass_year = VALUES(tenth_pass_year),
-            twelfth_pass_year = VALUES(twelfth_pass_year)
+            twelfth_pass_year = VALUES(twelfth_pass_year),
+            department = VALUES(department),
+            program = VALUES(program),
+            prev_sem_cgpa = VALUES(prev_sem_cgpa)
         """
         cursor.execute(query, (
-            user_id, values['jee_app_no'], values['dob'], values['gender'], values['nationality'], values['blood_group'],
+            user_id, values['dob'], values['gender'], values['nationality'], values['blood_group'],
             values['caste'], values['aadhaar_no'], values['phone'], values['address'], values['semester'],
             values['father_name'], values['mother_name'], values['father_occ'], values['mother_occ'], values['father_income'],
-            values['is_disabled'], values['jee_rank'], values['tenth_percent'], values['twelfth_percent'],
-            values['tenth_pass_year'], values['twelfth_pass_year']
+            values['is_disabled'], values['tenth_percent'], values['twelfth_percent'],
+            values['tenth_pass_year'], values['twelfth_pass_year'], values['department'], values['program'], values['prev_sem_cgpa']
         ))
         
         # Determine next step

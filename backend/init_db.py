@@ -37,6 +37,16 @@ def init_db():
         """
         cursor.execute(create_users_table)
 
+        # Create departments table
+        print("Creating departments table...")
+        create_departments_table = """
+        CREATE TABLE departments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL UNIQUE
+        )
+        """
+        cursor.execute(create_departments_table)
+
         # Create courses table
         print("Creating courses table...")
         create_courses_table = """
@@ -44,11 +54,15 @@ def init_db():
             id INT AUTO_INCREMENT PRIMARY KEY,
             course_name VARCHAR(255) NOT NULL,
             course_code VARCHAR(50) UNIQUE,
+            department VARCHAR(255),
+            semester VARCHAR(50),
+            course_type ENUM('Core', 'Elective', 'Lab') DEFAULT 'Core',
             capacity INT DEFAULT 50,
             description TEXT,
             instructor VARCHAR(255),
             credits INT DEFAULT 3,
             prerequisites VARCHAR(255),
+            is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
@@ -76,7 +90,6 @@ def init_db():
         CREATE TABLE students (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT UNIQUE,
-            jee_app_no VARCHAR(50) UNIQUE,
             dob DATE,
             gender VARCHAR(20),
             nationality VARCHAR(100),
@@ -92,11 +105,13 @@ def init_db():
             father_income VARCHAR(100),
             is_disabled BOOLEAN DEFAULT FALSE,
             semester VARCHAR(50),
-            jee_rank INT,
+            department VARCHAR(255),
+            program VARCHAR(255),
             tenth_percent DECIMAL(5,2),
             twelfth_percent DECIMAL(5,2),
             tenth_pass_year INT,
             twelfth_pass_year INT,
+            prev_sem_cgpa DECIMAL(4,2),
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
         """

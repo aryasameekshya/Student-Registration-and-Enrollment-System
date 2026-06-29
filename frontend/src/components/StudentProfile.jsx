@@ -87,11 +87,6 @@ const StudentProfile = ({ user }) => {
                 <div className="profile-section-header">Identification & Personal Details</div>
                 <div className="row g-4 mb-5">
                     <div className="col-md-4">
-                        <label className="profile-label">JEE Application No</label>
-                        <p className="profile-value">{profile.jee_app_no}</p>
-                        <small className="text-muted">Non-editable</small>
-                    </div>
-                    <div className="col-md-4">
                         <label className="profile-label">Aadhaar Number</label>
                         {isEditing ? (
                             <input type="text" name="aadhaar_no" className="form-control" value={profile.aadhaar_no} onChange={handleChange} />
@@ -161,65 +156,20 @@ const StudentProfile = ({ user }) => {
                     </div>
                 </div>
 
-                {/* Section: Family Details */}
-                <div className="profile-section-header">Family Details</div>
-                <div className="row g-4 mb-5">
-                    <div className="col-md-6">
-                        <div className="p-4 bg-light rounded-4 border">
-                            <h6 className="fw-bold mb-3"><i className="bi bi-person-fill me-2"></i>Father's Information</h6>
-                            <label className="profile-label">Name</label>
-                            {isEditing ? (
-                                <input type="text" name="father_name" className="form-control mb-2" value={profile.father_name} onChange={handleChange} />
-                            ) : (
-                                <p className="mb-3 fw-medium">{profile.father_name || 'N/A'}</p>
-                            )}
-                            <label className="profile-label">Occupation</label>
-                            {isEditing ? (
-                                <input type="text" name="father_occ" className="form-control" value={profile.father_occ} onChange={handleChange} />
-                            ) : (
-                                <p className="mb-0 text-muted">{profile.father_occ || 'N/A'}</p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="p-4 bg-light rounded-4 border">
-                            <h6 className="fw-bold mb-3"><i className="bi bi-person-fill me-2"></i>Mother's Information</h6>
-                            <label className="profile-label">Name</label>
-                            {isEditing ? (
-                                <input type="text" name="mother_name" className="form-control mb-2" value={profile.mother_name} onChange={handleChange} />
-                            ) : (
-                                <p className="mb-3 fw-medium">{profile.mother_name || 'N/A'}</p>
-                            )}
-                            <label className="profile-label">Occupation</label>
-                            {isEditing ? (
-                                <input type="text" name="mother_occ" className="form-control" value={profile.mother_occ} onChange={handleChange} />
-                            ) : (
-                                <p className="mb-0 text-muted">{profile.mother_occ || 'N/A'}</p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="col-md-12 mt-3">
-                         <label className="profile-label">Annual Family Income</label>
-                        {isEditing ? (
-                            <input type="text" name="father_income" className="form-control" value={profile.father_income} onChange={handleChange} />
-                        ) : (
-                            <p className="profile-value">₹ {profile.father_income || '0'}</p>
-                        )}
-                    </div>
-                </div>
 
                 {/* Section: Academic Background */}
-                <div className="profile-section-header">JEE & Academic Background</div>
+                <div className="profile-section-header">Academic Background</div>
                 <div className="row g-4 mb-5">
-                    <div className="col-md-12 mb-3">
-                        <label className="profile-label">JEE AIR Rank</label>
-                        {isEditing ? (
-                            <input type="number" name="jee_rank" className="form-control" value={profile.jee_rank} onChange={handleChange} />
-                        ) : (
-                            <p className="profile-value">{profile.jee_rank || 'N/A'}</p>
-                        )}
+                    <div className="col-md-4">
+                        <div className="p-3 bg-light rounded-4 border">
+                            <h6 className="fw-bold mb-3">Program Details</h6>
+                            <label className="profile-label">Department</label>
+                            <p className="profile-value mb-2">{profile.department || 'N/A'}</p>
+                            <label className="profile-label">Program & Semester</label>
+                            <p className="profile-value">{profile.program || 'N/A'} - {profile.semester || 'N/A'}</p>
+                        </div>
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-md-4">
                         <div className="p-3 bg-light rounded-4 border">
                             <h6 className="fw-bold mb-3">Class 10th (Secondary)</h6>
                             <div className="row">
@@ -242,7 +192,7 @@ const StudentProfile = ({ user }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-md-4">
                         <div className="p-3 bg-light rounded-4 border">
                             <h6 className="fw-bold mb-3">Class 12th (Higher Secondary)</h6>
                             <div className="row">
@@ -265,31 +215,18 @@ const StudentProfile = ({ user }) => {
                             </div>
                         </div>
                     </div>
+                    <div className="col-md-12">
+                         <div className="p-3 bg-light rounded-4 border mt-2">
+                            <label className="profile-label">Previous Semester CGPA</label>
+                            {isEditing ? (
+                                <input type="number" step="0.01" name="prev_sem_cgpa" className="form-control" value={profile.prev_sem_cgpa} onChange={handleChange} />
+                            ) : (
+                                <p className="profile-value mb-0">{profile.prev_sem_cgpa || 'N/A'}</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Section: Document Vault */}
-                <div className="profile-section-header">Document Vault</div>
-                <div className="row g-3 mb-5">
-                    {profile.documents && profile.documents.length > 0 ? (
-                        profile.documents.map((doc, idx) => (
-                            <div key={idx} className="col-md-6 col-lg-4">
-                                <div className="doc-item">
-                                    <div className="doc-icon">
-                                        <i className={`bi ${doc.type.includes('cert') || doc.type.includes('card') ? 'bi-shield-check' : 'bi-file-earmark-pdf-fill'}`}></i>
-                                    </div>
-                                    <div className="doc-name">{formatLabel(doc.type)}</div>
-                                    <a href={`http://localhost:5000${doc.url}`} target="_blank" rel="noopener noreferrer" className="view-link">
-                                        View
-                                    </a>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="col-12 py-3 text-center text-muted border rounded-4 border-dashed">
-                            No documents uploaded yet.
-                        </div>
-                    )}
-                </div>
 
                 {isEditing && (
                     <div className="mt-4 d-flex gap-3 position-sticky bottom-0 bg-white p-3 border-top" style={{zIndex: 50}}>

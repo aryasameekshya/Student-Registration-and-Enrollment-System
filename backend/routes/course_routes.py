@@ -114,3 +114,58 @@ def drop_course(course_id):
     finally:
         cursor.close()
         conn.close()
+@courses_bp.route('/student/enrollment-stats', methods=['GET'])
+@login_required
+def get_student_stats():
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Get semester
+        cursor.execute("SELECT semester FROM students WHERE user_id = %s", (user_id,))
+        student_data = cursor.fetchone()
+        semester = student_data['semester'] if student_data else 'N/A'
+        
+        # Get enrollment counts
+        cursor.execute("SELECT status, COUNT(*) as count FROM enrollments WHERE student_id = %s GROUP BY status", (user_id,))
+        enrollments = cursor.fetchall()
+        
+        stats = {
+            "semester": semester,
+            "total": sum(e['count'] for e in enrollments),
+            "pending": next((e['count'] for e in enrollments if e['status'] == 'Pending'), 0),
+            "approved": next((e['count'] for e in enrollments if e['status'] == 'Approved'), 0),
+            "rejected": next((e['count'] for e in enrollments if e['status'] == 'Rejected'), 0)
+        }
+        
+        return jsonify(stats), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        conn.close()
+
+@courses_bp.route('/student/my-enrollments', methods=['GET'])
+@login_required
+def get_my_enrollments():
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        query = """
+        SELECT e.status, e.enrolled_at, c.course_name, c.course_code 
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.id
+        WHERE e.student_id = %s
+        ORDER BY e.enrolled_at DESC
+        """
+        cursor.execute(query, (user_id,))
+        enrollments = cursor.fetchall()
+        return jsonify(enrollments), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    finally:
+        cursor.close()
+        conn.close()

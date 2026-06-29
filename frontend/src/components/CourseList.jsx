@@ -72,16 +72,32 @@ const CourseList = ({ user }) => {
                     {user.role === 'admin' ? 'Course Catalog Management' : 'Select Your Courses'}
                 </h3>
                 
-                <div className="search-box position-relative" style={{ minWidth: '300px' }}>
-                    <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input 
-                        type="text" 
-                        className="form-control ps-5 border-0 shadow-sm" 
-                        placeholder="Search name, code, or instructor..." 
-                        style={{ borderRadius: '12px', background: '#f8fafc' }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div className="search-box position-relative" style={{ minWidth: '350px' }}>
+                    <div className="input-group shadow-sm" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                        <span className="input-group-text border-0 bg-white ps-3">
+                            <i className="bi bi-search text-muted"></i>
+                        </span>
+                        <input 
+                            type="text" 
+                            className="form-control border-0 ps-2" 
+                            placeholder="Search name, code, or instructor..." 
+                            style={{ background: '#ffffff', boxShadow: 'none' }}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        {searchTerm && (
+                            <button 
+                                className="btn border-0 bg-white text-muted px-2" 
+                                type="button"
+                                onClick={() => setSearchTerm('')}
+                            >
+                                <i className="bi bi-x-circle-fill"></i>
+                            </button>
+                        )}
+                        <button className="btn btn-primary px-3 fw-bold" type="button">
+                            Search
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -167,10 +183,23 @@ const CourseList = ({ user }) => {
             </div>
             
             {filteredCourses.length === 0 && (
-                <div className="text-center py-5 mt-4" style={{ background: '#f8fafc', borderRadius: '20px' }}>
-                    <i className="bi bi-search display-4 text-muted mb-3 d-block opacity-25"></i>
-                    <p className="text-muted fw-semibold">No courses found matching "{searchTerm}"</p>
-                    <button className="btn btn-link text-decoration-none" onClick={() => setSearchTerm('')}>Clear search</button>
+                <div className="text-center py-5 mt-4 animate-fadeIn" style={{ background: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' }}>
+                    <div className="mb-3">
+                        <i className={`bi ${searchTerm ? 'bi-search' : 'bi-book'} display-1 text-muted opacity-25`}></i>
+                    </div>
+                    <h4 className="text-dark fw-bold">
+                        {searchTerm ? `No results for "${searchTerm}"` : 'No courses available'}
+                    </h4>
+                    <p className="text-muted mx-auto" style={{ maxWidth: '400px' }}>
+                        {searchTerm 
+                            ? 'Try checking your spelling or use different keywords like course code or instructor name.' 
+                            : 'There are currently no courses in the catalog. Please check back later or contact the administrator.'}
+                    </p>
+                    {searchTerm && (
+                        <button className="btn btn-primary rounded-pill px-4 mt-2 shadow-sm" onClick={() => setSearchTerm('')}>
+                            <i className="bi bi-arrow-left me-2"></i>Clear search
+                        </button>
+                    )}
                 </div>
             )}
         </div>
